@@ -1,4 +1,4 @@
-#  Copyright (c) 2025 André Gomes
+#  Copyright (c) 2025-2026 André S. Gomes
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 #  limitations under the License.
 #
 #  SPDX-License-Identifier: Apache-2.0
+
 import argparse
 import json
 import os
