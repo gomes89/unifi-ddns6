@@ -92,9 +92,9 @@ Debug mode can be activated in two ways (the command line flag takes precedence)
     ```
 -  **Command Line Flag:**
     ```bash
-    python main.py --debug
+    python dynamic_dns.py --debug
     # or
-    python main.py -d
+    python dynamic_dns.py -d
     ```
 
 ## Contributing
