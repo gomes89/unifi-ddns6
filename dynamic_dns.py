@@ -33,6 +33,14 @@ REQUIRED_ENV_VARIABLES = {
         "CLOUDFLARE_RECORD_NAME",
         "UNIFI_API_USERNAME",
         "UNIFI_API_PASSWORD"
+    ],
+    "DynDNS": [
+        "DYNDNS_UPDATE_URL",
+        "DYNDNS_HOSTNAME",
+        "DYNDNS_USERNAME",
+        "DYNDNS_PASSWORD",
+        "UNIFI_API_USERNAME",
+        "UNIFI_API_PASSWORD"
     ]
 }
 
@@ -426,9 +434,98 @@ class HurricaneElectricDNSClient:
             response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
 
             print(f"DNS Update Successful! Status Code: {response.status_code}")
-            print("Response Body:")
-            print(response.text)
+            print(f"Response Body: {response.text}")
             return True
+
+        except requests.exceptions.HTTPError as errh:
+            print(f"Http Error during DNS update: {errh}")
+        except requests.exceptions.ConnectionError as errc:
+            print(f"Error Connecting during DNS update: {errc}")
+        except requests.exceptions.Timeout as errt:
+            print(f"Timeout Error during DNS update: {errt}")
+        except requests.exceptions.RequestException as err:
+            print(f"An unexpected error occurred during DNS update: {err}")
+
+        return False
+
+
+class DynDNSClient:
+    """
+    A client for updating DNS records using the standard DynDNS v2 API.
+    Optimized for modern providers like IPv64.net.
+    """
+
+    def __init__(self, hostname: str, username: str, password: str, update_url: str):
+        self.hostname = hostname
+        self.username = username
+        self.password = password
+        self.update_url = update_url
+
+    def update_dns(self, ipv4: str | None = None, ipv6: str | None = None) -> bool:
+        """
+        Updates the DNS record with the specified IPv4 and/or IPv6 addresses.
+
+        Args:
+            ipv4 (str | None): The IPv4 address to update.
+            ipv6 (str | None): The IPv6 address to update.
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+        """
+        if not ipv4 and not ipv6:
+            print("Error: You must provide at least one IP address (IPv4 | IPv6) to update.")
+            return False
+
+        payload = {
+            "hostname": self.hostname,
+            "key": self.password,
+        }
+
+        if ipv4:
+            payload["myip"] = ipv4
+        if ipv6:
+            payload["myipv6"] = ipv6
+
+        headers = {
+            "User-Agent": "Unifi-IPv6-DynDNS-Updater/1.0",
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+
+        print(f"Attempting to update DNS for hostname: {self.hostname}")
+        print(f"Using URL: {self.update_url}")
+
+        try:
+            response = requests.post(
+                self.update_url,
+                data=payload,
+                auth=(self.username, self.password),  # Dual-method auth for maximum compatibility
+                headers=headers,
+                timeout=10
+            )
+            response.raise_for_status()
+            response_text = response.text.strip()
+
+            try:
+                data = response.json()
+                # Check for "success" status or the standard "good"/"nochg" keywords
+                status = data.get("status")
+                info = data.get("info")
+
+                if status == "success" or info in ["good", "nochg"]:
+                    print(f"DNS Update Successful: {info if info else status}")
+                    return True
+                else:
+                    print(f"Warning: Provider returned a failure response: {data}")
+                    return False
+
+            # Fallback to plain text
+            except ValueError:
+                if response_text.startswith("good") or response_text.startswith("nochg"):
+                    print(f"DNS Update Successful: {response_text}")
+                    return True
+                else:
+                    print(f"Warning: Provider returned an unexpected response: {response_text}")
+                    return False
 
         except requests.exceptions.HTTPError as errh:
             print(f"Http Error during DNS update: {errh}")
@@ -455,7 +552,8 @@ def main():
     # Determine the DNS provider
     dns_provider = os.getenv("DNS_PROVIDER")
     if dns_provider not in REQUIRED_ENV_VARIABLES:
-        raise EnvironmentError("DNS_PROVIDER environment variable is not set or is invalid. Use 'HE' or 'Cloudflare'.")
+        raise EnvironmentError(
+            "DNS_PROVIDER environment variable is not set or is invalid. Use 'HE', 'Cloudflare', or 'DynDNS'.")
 
     # Validate required environment variables for the selected provider
     required_vars = REQUIRED_ENV_VARIABLES[dns_provider]
@@ -507,6 +605,15 @@ def main():
             record_name=env_values["CLOUDFLARE_RECORD_NAME"],
             new_ipv6_address=current_ip
         )
+
+    elif dns_provider == "DynDNS":
+        dyndns_client = DynDNSClient(
+            hostname=env_values["DYNDNS_HOSTNAME"],
+            username=env_values["DYNDNS_USERNAME"],
+            password=env_values["DYNDNS_PASSWORD"],
+            update_url=env_values["DYNDNS_UPDATE_URL"]
+        )
+        dyndns_client.update_dns(ipv6=current_ip)
 
     else:
         print(f"Unknown DNS provider: {dns_provider}")

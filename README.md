@@ -17,11 +17,14 @@ Currently, this script supports the following DNS providers:
 
 * Cloudflare
 
+* DynDNS (e.g., Dyn, IPv64.net, No-IP, etc.)
+
 ## Tested Devices
 
-The code has been specifically tested with the UniFi Cloud Gateway Ultra (UDRULT). While it may work with other UniFi
+The script has been specifically tested with the UniFi Cloud Gateway Ultra (UDRULT). While it may work with other UniFi
 OS-based consoles, this is the only device for which functionality is confirmed. Please open an issue / pull request
-to add more devices to the list.
+to add more devices to the list, and include the anonymized output of the script in debug mode 
+(see [Debug Mode](#debug-mode)).
 
 ## Getting Started
 
@@ -75,6 +78,27 @@ export DNS_PROVIDER=Cloudflare
 export CLOUDFLARE_API_TOKEN="your-cloudflare-api-token"
 export CLOUDFLARE_ZONE_ID="your-cloudflare-zone-id"
 export CLOUDFLARE_RECORD_NAME="ddns.example.com"
+export UNIFI_API_USERNAME="your-unifi-username"
+export UNIFI_API_PASSWORD="your-unifi-password"
+```
+
+### DynDNS (Dyn | IPv64.net | No-IP | Others )
+
+| Variable          | Description                                                              |
+|:------------------|:-------------------------------------------------------------------------|
+| DYNDNS_UPDATE_URL | The API endpoint for your provider (e.g., https://ipv64.net/nic/update). |
+| DYNDNS_HOSTNAME   | The hostname to update.                                                  |
+| DYNDNS_USERNAME   | Your DynDNS service username (often the same as the hostname).           |
+| DYNDNS_PASSWORD   | Your DynDNS service password / API token.                                |
+
+Example:
+
+```bash
+export DNS_PROVIDER=DynDNS
+export DYNDNS_UPDATE_URL="https://ipv64.net/nic/update"
+export DYNDNS_HOSTNAME="example.ipv64.net"
+export DYNDNS_USERNAME="your-dyndns-username"
+export DYNDNS_PASSWORD="your-dyndns-api-token"
 export UNIFI_API_USERNAME="your-unifi-username"
 export UNIFI_API_PASSWORD="your-unifi-password"
 ```
