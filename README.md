@@ -79,6 +79,24 @@ export UNIFI_API_USERNAME="your-unifi-username"
 export UNIFI_API_PASSWORD="your-unifi-password"
 ```
 
+## Debug Mode
+
+You can enable debug mode to troubleshoot connection issues or inspect the raw data returned by your UniFi controller. 
+When enabled, the script will print formatted JSON responses to the terminal.
+
+Debug mode can be activated in two ways (the command line flag takes precedence):
+
+-  **Environment Variable:**
+    ```bash
+    export DEBUG=true
+    ```
+-  **Command Line Flag:**
+    ```bash
+    python main.py --debug
+    # or
+    python main.py -d
+    ```
+
 ## Contributing
 
 If you wish to contribute or suggest changes, please open an issue or pull request.

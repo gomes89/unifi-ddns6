@@ -13,7 +13,7 @@
 #  limitations under the License.
 #
 #  SPDX-License-Identifier: Apache-2.0
-
+import argparse
 import json
 import os
 import requests
@@ -46,7 +46,7 @@ class UnifiAPIClient:
     Designed for UniFi OS-based consoles like the Cloud Gateway Ultra.
     """
 
-    def __init__(self, controller_url: str, site_name: str, username: str, password: str):
+    def __init__(self, controller_url: str, site_name: str, username: str, password: str, debug: bool = False):
         """
         Initializes the UniFi API client with all required connection details and credentials.
 
@@ -55,11 +55,13 @@ class UnifiAPIClient:
             site_name (str): The name of the UniFi site to connect to (default: "default").
             username (str): Your UniFi OS username.
             password (str): Your UniFi OS password.
+            debug (bool): If True, enables verbose logging for troubleshooting (default: False).
         """
         self.controller_url = controller_url.rstrip('/')
         self.site_name = site_name
         self.username = username
         self.password = password
+        self.debug = debug
         self.session = requests.Session()
         self.session.verify = False  # UniFi controllers often use self-signed certs
         self.logged_in = False  # Track login status
@@ -183,6 +185,9 @@ class UnifiAPIClient:
             response = self.session.get(device_url, headers=headers, timeout=10)
             response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
             data = response.json()
+            if self.debug:
+                print("[DEBUG] UniFi API Response Data:")
+                print(json.dumps(data, indent=2, sort_keys=True))
 
             found_gateway = None
             if data and 'data' in data and isinstance(data['data'], list):
@@ -438,6 +443,15 @@ class HurricaneElectricDNSClient:
 
 
 def main():
+    parser = argparse.ArgumentParser(description="UniFi IPv6 Dynamic DNS Updater")
+    parser.add_argument(
+        "-d", "--debug",
+        action="store_true",
+        default=os.getenv("DEBUG", "false").lower() == "true",
+        help="Enable verbose debug logging"
+    )
+    args = parser.parse_args()
+
     # Determine the DNS provider
     dns_provider = os.getenv("DNS_PROVIDER")
     if dns_provider not in REQUIRED_ENV_VARIABLES:
@@ -463,7 +477,8 @@ def main():
         controller_url=unifi_controller_url,
         site_name=unifi_site_name,
         username=env_values["UNIFI_API_USERNAME"],
-        password=env_values["UNIFI_API_PASSWORD"]
+        password=env_values["UNIFI_API_PASSWORD"],
+        debug=args.debug
     )
 
     if unifi_api_client.login():
